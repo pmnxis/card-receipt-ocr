@@ -7,4 +7,6 @@
 target
 dist/
 .trunk/
+Cargo.lock
+**/Cargo.lock
 .vscode
