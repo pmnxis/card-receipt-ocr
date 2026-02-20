@@ -127,10 +127,7 @@ impl AppState {
         for t in &self.transactions {
             // Use expense_type instead of merchant when set
             // (sc-expense Chrome extension reads this column)
-            let merchant_col = t
-                .expense_type
-                .as_deref()
-                .unwrap_or(&t.merchant);
+            let merchant_col = t.expense_type.as_deref().unwrap_or(&t.merchant);
             csv.push_str(&format!(
                 "{},{},{},{}\n",
                 t.filename,

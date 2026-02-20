@@ -40,7 +40,14 @@ const RULES: &[Rule] = &[
     },
     Rule {
         keywords: &[
-            "흥덕", "식당", "레스토랑", "카페", "음식", "투다리", "치킨", "피자",
+            "흥덕",
+            "식당",
+            "레스토랑",
+            "카페",
+            "음식",
+            "투다리",
+            "치킨",
+            "피자",
         ],
         category: "业务招待(Entertainment expenses)",
         label: "Business meal",

@@ -40,7 +40,8 @@ pub fn parse_receipt(filename: &str, raw_text: &str) -> Result<CardTransaction, 
 fn detect_format(text: &str) -> CardFormat {
     if text.contains("하나카드") || text.contains("거래일시") {
         CardFormat::HanaCard
-    } else if text.contains("결제 정보") || text.contains("현대카드") || text.contains("거래 일자") {
+    } else if text.contains("결제 정보") || text.contains("현대카드") || text.contains("거래 일자")
+    {
         CardFormat::NaverHyundaiCard
     } else if text.contains("카드이용내역")
         || text.contains("매출전표")
@@ -76,8 +77,8 @@ fn parse_hana_card(text: &str) -> Result<(NaiveDateTime, String, u64), String> {
         return Err("거래일시를 찾을 수 없습니다".into());
     };
 
-    let amount = extract_amount_after_label(text, "승인금액")
-        .or_else(|_| extract_first_amount(text))?;
+    let amount =
+        extract_amount_after_label(text, "승인금액").or_else(|_| extract_first_amount(text))?;
 
     let merchant = extract_text_after_label(text, "가맹점명")
         .unwrap_or_else(|| extract_merchant_before_amount(text));
@@ -91,13 +92,15 @@ fn parse_hana_card(text: &str) -> Result<(NaiveDateTime, String, u64), String> {
 /// 거래 일자 26. 1. 31 · 14:59:27
 fn parse_naver_hyundai(text: &str) -> Result<(NaiveDateTime, String, u64), String> {
     let date_re = Regex::new(
-        r"거래\s*일자\s+(\d{2})[.\s]+(\d{1,2})[.\s]+(\d{1,2})\s*[·\-:]\s*(\d{2}):(\d{2}):?(\d{2})?"
-    ).unwrap();
+        r"거래\s*일자\s+(\d{2})[.\s]+(\d{1,2})[.\s]+(\d{1,2})\s*[·\-:]\s*(\d{2}):(\d{2}):?(\d{2})?",
+    )
+    .unwrap();
 
     // Also try "거래 일자" with the dot-separated format
     let date_re2 = Regex::new(
-        r"거래\s*일\s*자\s+(\d{2})\.\s*(\d{1,2})\.\s*(\d{1,2})\s*[·\-]\s*(\d{2}):(\d{2}):?(\d{2})?"
-    ).unwrap();
+        r"거래\s*일\s*자\s+(\d{2})\.\s*(\d{1,2})\.\s*(\d{1,2})\s*[·\-]\s*(\d{2}):(\d{2}):?(\d{2})?",
+    )
+    .unwrap();
 
     let datetime = if let Some(caps) = date_re.captures(text).or_else(|| date_re2.captures(text)) {
         let year = 2000 + caps[1].parse::<i32>().unwrap_or(26);
@@ -135,27 +138,25 @@ fn parse_card_app_screenshot(text: &str) -> Result<(NaiveDateTime, String, u64),
     let date_re =
         Regex::new(r"거래일\s+(\d{4})[.\s](\d{2})[.\s](\d{2})\s+(\d{2}):(\d{2})").unwrap();
     // Also try "거래일" with full datetime
-    let date_re2 = Regex::new(
-        r"거래일\s+(\d{4})[.\s](\d{2})[.\s](\d{2})\s*(\d{2}):(\d{2}):?(\d{2})?",
-    )
-    .unwrap();
+    let date_re2 =
+        Regex::new(r"거래일\s+(\d{4})[.\s](\d{2})[.\s](\d{2})\s*(\d{2}):(\d{2}):?(\d{2})?")
+            .unwrap();
 
-    let datetime =
-        if let Some(caps) = date_re.captures(text).or_else(|| date_re2.captures(text)) {
-            let s = format!(
-                "{}-{}-{} {}:{}:{}",
-                &caps[1],
-                &caps[2],
-                &caps[3],
-                &caps[4],
-                &caps[5],
-                caps.get(6).map_or("00", |m| m.as_str())
-            );
-            NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %H:%M:%S")
-                .map_err(|e| format!("날짜 파싱 오류: {}", e))?
-        } else {
-            return Err("거래일을 찾을 수 없습니다".into());
-        };
+    let datetime = if let Some(caps) = date_re.captures(text).or_else(|| date_re2.captures(text)) {
+        let s = format!(
+            "{}-{}-{} {}:{}:{}",
+            &caps[1],
+            &caps[2],
+            &caps[3],
+            &caps[4],
+            &caps[5],
+            caps.get(6).map_or("00", |m| m.as_str())
+        );
+        NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %H:%M:%S")
+            .map_err(|e| format!("날짜 파싱 오류: {}", e))?
+    } else {
+        return Err("거래일을 찾을 수 없습니다".into());
+    };
 
     // For card app screenshots, try labeled amounts first (공급가액),
     // then first non-zero amount (avoid 부가세 0원 / 봉사료 0원)
@@ -297,7 +298,10 @@ fn extract_merchant_from_card_detail(text: &str) -> Option<String> {
         }
 
         // Skip lines that are just numbers
-        if trimmed.chars().all(|c| c.is_ascii_digit() || c == ',' || c == ' ') {
+        if trimmed
+            .chars()
+            .all(|c| c.is_ascii_digit() || c == ',' || c == ' ')
+        {
             continue;
         }
 

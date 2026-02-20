@@ -142,10 +142,8 @@ impl CardReceiptApp {
         } else if self.state.ocr_in_progress {
             self.state.ocr_in_progress = false;
             if self.state.error_messages.is_empty() {
-                self.state.status_message = format!(
-                    "완료! {}개 거래 인식됨",
-                    self.state.transactions.len()
-                );
+                self.state.status_message =
+                    format!("완료! {}개 거래 인식됨", self.state.transactions.len());
             } else {
                 self.state.status_message = format!(
                     "완료! {}개 인식, {}개 실패",
@@ -195,9 +193,7 @@ impl CardReceiptApp {
             self.state.transactions[idx].amount = amount;
         }
 
-        if let Ok(dt) =
-            NaiveDateTime::parse_from_str(&self.edit_datetime_str, "%Y.%m.%d %H:%M")
-        {
+        if let Ok(dt) = NaiveDateTime::parse_from_str(&self.edit_datetime_str, "%Y.%m.%d %H:%M") {
             self.state.transactions[idx].datetime = dt;
         }
 
@@ -229,7 +225,7 @@ impl eframe::App for CardReceiptApp {
                             self.state.pending_images.push(PendingImage {
                                 filename: name,
                                 bytes: bytes.to_vec(),
-                                            });
+                            });
                         }
                     }
                 }
@@ -320,10 +316,7 @@ impl eframe::App for CardReceiptApp {
                 ui.label(&self.state.status_message);
 
                 if !self.state.pending_images.is_empty() && !self.state.ocr_in_progress {
-                    ui.label(format!(
-                        "| 대기 중: {}개",
-                        self.state.pending_images.len()
-                    ));
+                    ui.label(format!("| 대기 중: {}개", self.state.pending_images.len()));
                 }
             });
             ui.add_space(2.0);
@@ -343,14 +336,11 @@ impl eframe::App for CardReceiptApp {
                 .show(ctx, |ui| {
                     ui.horizontal(|ui| {
                         ui.strong("미리보기");
-                        ui.with_layout(
-                            egui::Layout::right_to_left(egui::Align::Center),
-                            |ui| {
-                                if ui.button("✕").clicked() {
-                                    close_panel = true;
-                                }
-                            },
-                        );
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if ui.button("✕").clicked() {
+                                close_panel = true;
+                            }
+                        });
                     });
                     ui.separator();
 
@@ -365,10 +355,7 @@ impl eframe::App for CardReceiptApp {
                                 egui::vec2(available_width, display_height),
                             ));
                         } else {
-                            ui.colored_label(
-                                egui::Color32::GRAY,
-                                "이미지를 불러올 수 없습니다",
-                            );
+                            ui.colored_label(egui::Color32::GRAY, "이미지를 불러올 수 없습니다");
                         }
                     });
                 });
@@ -499,9 +486,7 @@ impl eframe::App for CardReceiptApp {
 
 fn is_image_file(name: &str) -> bool {
     let lower = name.to_lowercase();
-    lower.ends_with(".jpg")
-        || lower.ends_with(".jpeg")
-        || lower.ends_with(".png")
+    lower.ends_with(".jpg") || lower.ends_with(".jpeg") || lower.ends_with(".png")
 }
 
 fn decode_image_to_texture(

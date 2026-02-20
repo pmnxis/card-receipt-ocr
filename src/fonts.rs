@@ -16,10 +16,7 @@ pub fn setup_fonts(ctx: &egui::Context) {
     #[cfg(target_arch = "wasm32")]
     {
         if let Some(shsans_data) = wasm_font_cache::get("SourceHanSansVF-remapped.otf") {
-            log::info!(
-                "Loaded Source Han Sans ({} bytes)",
-                shsans_data.len()
-            );
+            log::info!("Loaded Source Han Sans ({} bytes)", shsans_data.len());
             fonts.font_data.insert(
                 "Source Han Sans".to_owned(),
                 Arc::new(egui::FontData::from_owned(shsans_data).weight(400)),

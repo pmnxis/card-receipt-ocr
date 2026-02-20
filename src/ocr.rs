@@ -56,4 +56,3 @@ pub async fn pick_files() -> Result<Vec<(String, Vec<u8>)>, String> {
     }
     Ok(files)
 }
-
