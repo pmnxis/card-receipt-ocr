@@ -49,9 +49,6 @@ jobs:
           chmod +x trunk
           sudo mv trunk /usr/local/bin/
 
-      - name: Pin wasm-bindgen ecosystem for glow 0.16.0 compat
-        run: cargo update -p wasm-bindgen --precise 0.2.108 && cargo update -p js-sys --precise 0.3.85 && cargo update -p web-sys --precise 0.3.85 && cargo update -p wasm-bindgen-futures --precise 0.4.58 || true
-
       - name: Build with Trunk
         run: trunk build --release --public-url /card-receipt-ocr/
 

@@ -30,8 +30,6 @@ jobs:
           target: wasm32-unknown-unknown
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
-      - name: Pin wasm-bindgen ecosystem for glow 0.16.0 compat
-        run: cargo update -p wasm-bindgen --precise 0.2.108 && cargo update -p js-sys --precise 0.3.85 && cargo update -p web-sys --precise 0.3.85 && cargo update -p wasm-bindgen-futures --precise 0.4.58 || true
       - uses: actions-rs/cargo@v1
         with:
           command: check
@@ -67,8 +65,6 @@ jobs:
           components: clippy
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
-      - name: Pin wasm-bindgen ecosystem for glow 0.16.0 compat
-        run: cargo update -p wasm-bindgen --precise 0.2.108 && cargo update -p js-sys --precise 0.3.85 && cargo update -p web-sys --precise 0.3.85 && cargo update -p wasm-bindgen-futures --precise 0.4.58 || true
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
