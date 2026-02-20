@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: © 2025 Jinwoo Park (pmnxis@gmail.com)
+#
+# SPDX-License-Identifier: MIT
+
+# If you see this, run "rustup self update" to get rustup 1.23 or newer.
+
+[toolchain]
+channel = "1.92"
+components = [ "rustfmt", "clippy" ]

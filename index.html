@@ -1,0 +1,90 @@
+<!--
+  SPDX-FileCopyrightText: © 2025 Jinwoo Park (pmnxis@gmail.com)
+
+  SPDX-License-Identifier: MIT
+-->
+<!DOCTYPE html>
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+<head>
+    <title>카드 영수증 OCR</title>
+
+    <link data-trunk rel="rust" data-wasm-opt="0" />
+
+    <!-- Copy font files to dist/Fonts/ for runtime loading -->
+    <link data-trunk rel="copy-dir" href="web_fonts" data-target-path="Fonts" />
+
+    <style>
+        html, body {
+            overflow: hidden;
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 100%;
+            width: 100%;
+            background: #1a1a2e;
+        }
+
+        canvas {
+            margin-right: auto;
+            margin-left: auto;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .centered {
+            margin-right: auto;
+            margin-left: auto;
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #f0f0f0;
+            font-size: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            text-align: center;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+        }
+
+        .spinner:after {
+            content: " ";
+            display: block;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            border-color: #fff transparent #fff transparent;
+            animation: spin 1.2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
+    <!-- Tesseract.js v5 for OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+
+<body>
+    <canvas id="the_canvas_id"></canvas>
+
+    <div class="centered" id="loading_text">
+        <p style="font-size:16px">카드 영수증 OCR 로딩 중...</p>
+        <div class="spinner"></div>
+    </div>
+</body>
+
+</html>

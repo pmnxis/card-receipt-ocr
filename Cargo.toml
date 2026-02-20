@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: © 2025 Jinwoo Park (pmnxis@gmail.com)
+#
+# SPDX-License-Identifier: CC0-1.0
+
+[package]
+name = "card-receipt-ocr"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"
+authors = ["Jinwoo Park <pmnxis@gmail.com>"]
+repository = "https://github.com/pmnxis/card-receipt-ocr"
+license = "MIT"
+
+[dependencies]
+eframe = { git = "https://github.com/pmnxis/egui", rev = "ac14c7d289be4a382751afece4687c292615a767", default-features = false, features = ["glow"] }
+egui = { git = "https://github.com/pmnxis/egui", rev = "ac14c7d289be4a382751afece4687c292615a767" }
+egui_extras = { git = "https://github.com/pmnxis/egui", rev = "ac14c7d289be4a382751afece4687c292615a767" }
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+regex = "1"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = [
+    "Window",
+    "Document",
+    "HtmlElement",
+    "HtmlAnchorElement",
+    "HtmlInputElement",
+    "FileReader",
+    "FileList",
+    "File",
+    "Blob",
+    "BlobPropertyBag",
+    "Url",
+    "Event",
+    "console",
+] }
+console_error_panic_hook = "0.1"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+env_logger = "0.11"
+
+[profile.release]
+opt-level = 2
+
+[profile.dev.package."*"]
+opt-level = 2

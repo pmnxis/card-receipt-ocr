@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: © 2025 Jinwoo Park (pmnxis@gmail.com)
+#
+# SPDX-License-Identifier: MIT
+
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+  workflow_dispatch:
+
+env:
+  RUSTFLAGS: -D warnings
+  RUSTDOCFLAGS: -D warnings
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.92
+          override: true
+          target: wasm32-unknown-unknown
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --target wasm32-unknown-unknown
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.92
+          override: true
+          components: rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.92
+          override: true
+          target: wasm32-unknown-unknown
+          components: clippy
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --target wasm32-unknown-unknown -- -D warnings
