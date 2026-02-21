@@ -9,6 +9,7 @@
 
 /// Expense recommendation from keyword matching
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct ExpenseRecommendation {
     /// Display label (e.g., "Taxi", "Gas", "Office expense")
     pub label: String,
@@ -109,6 +110,7 @@ pub fn detect_expense(merchant: &str) -> Option<ExpenseRecommendation> {
 
 /// Generate the fee note string for CSV output.
 /// This is what the sc-expense Chrome extension expects in the merchant column.
+#[allow(dead_code)]
 pub fn fee_note_for_csv(expense_label: &str, _merchant: &str) -> String {
     // If it's a known single-word label, use as-is
     if KNOWN_LABELS.contains(&expense_label) {
