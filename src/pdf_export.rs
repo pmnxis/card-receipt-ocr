@@ -73,7 +73,9 @@ pub fn generate_receipts_pdf(transactions: &[CardTransaction]) -> Result<Vec<u8>
 
     // ── Object 3: Helvetica font ────────────────────────────────────────────
     offsets[3] = buf.len();
-    w!("3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n");
+    w!(
+        "3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n"
+    );
 
     // ── Per-page objects ────────────────────────────────────────────────────
     for (i, txn) in transactions.iter().enumerate() {
@@ -111,7 +113,13 @@ pub fn generate_receipts_pdf(transactions: &[CardTransaction]) -> Result<Vec<u8>
         let expense = txn.expense_type.as_deref().unwrap_or("-");
         let expense_ascii: String = expense
             .chars()
-            .map(|c| if c.is_ascii_graphic() || c == ' ' { c } else { '?' })
+            .map(|c| {
+                if c.is_ascii_graphic() || c == ' ' {
+                    c
+                } else {
+                    '?'
+                }
+            })
             .collect();
         let footer = format!(
             "{}. {}  {}  {}",

@@ -317,9 +317,7 @@ impl eframe::App for CardReceiptApp {
                             .iter()
                             .map(|t| (t.filename.as_str(), t.image_bytes.as_slice()))
                             .collect();
-                        match crate::pdf_export::generate_receipts_pdf(
-                            &self.state.transactions,
-                        ) {
+                        match crate::pdf_export::generate_receipts_pdf(&self.state.transactions) {
                             Ok(pdf_bytes) => {
                                 if let Err(e) = web_download::download_receipt_bundle(
                                     &images,
@@ -327,8 +325,7 @@ impl eframe::App for CardReceiptApp {
                                     &pdf_bytes,
                                     "영수증모음.zip",
                                 ) {
-                                    self.state.status_message =
-                                        format!("ZIP 다운로드 실패: {}", e);
+                                    self.state.status_message = format!("ZIP 다운로드 실패: {}", e);
                                 }
                             }
                             Err(e) => {

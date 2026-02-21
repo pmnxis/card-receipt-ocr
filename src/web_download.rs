@@ -75,7 +75,7 @@ pub fn download_receipt_bundle(
     zip_filename: &str,
 ) -> Result<(), String> {
     use std::io::Write;
-    use zip::{write::SimpleFileOptions, CompressionMethod, ZipWriter};
+    use zip::{CompressionMethod, ZipWriter, write::SimpleFileOptions};
 
     // Images are already compressed (JPEG/PNG) — store without re-compression.
     let store = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
