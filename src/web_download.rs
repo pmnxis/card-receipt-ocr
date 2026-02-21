@@ -63,22 +63,31 @@ pub fn download_csv(filename: &str, csv_content: &str) -> Result<(), String> {
     download_file(filename, csv_content.as_bytes(), "text/csv;charset=utf-8;")
 }
 
-/// Download images as a numbered ZIP archive.
-/// Each image is renamed to its 1-based index with the original extension.
-pub fn download_images_as_zip(
+/// Bundle images (numbered), CSV, and PDF into a single ZIP archive and trigger download.
+///
+/// - Images are renamed to their 1-based index with the original extension (`1.jpg`, `2.png`, …)
+/// - CSV is stored as `카드사용내역.csv`
+/// - PDF is stored as `영수증모음.pdf`
+pub fn download_receipt_bundle(
     images: &[(&str, &[u8])], // (original_filename, bytes)
+    csv_bytes: &[u8],
+    pdf_bytes: &[u8],
     zip_filename: &str,
 ) -> Result<(), String> {
     use std::io::Write;
     use zip::{write::SimpleFileOptions, CompressionMethod, ZipWriter};
 
+    // Images are already compressed (JPEG/PNG) — store without re-compression.
+    let store = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+    // CSV and PDF benefit from deflate compression.
+    let deflate = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+
     let mut buf: Vec<u8> = Vec::new();
     {
         let cursor = std::io::Cursor::new(&mut buf);
         let mut zip = ZipWriter::new(cursor);
-        let options =
-            SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
 
+        // Numbered receipt images
         for (i, (original_name, bytes)) in images.iter().enumerate() {
             if bytes.is_empty() {
                 continue;
@@ -89,10 +98,26 @@ pub fn download_images_as_zip(
                 .unwrap_or("jpg")
                 .to_ascii_lowercase();
             let entry_name = format!("{}.{}", i + 1, ext);
-            zip.start_file(&entry_name, options)
+            zip.start_file(&entry_name, store)
                 .map_err(|e| format!("ZIP: start_file error: {e}"))?;
             zip.write_all(bytes)
                 .map_err(|e| format!("ZIP: write error: {e}"))?;
+        }
+
+        // CSV
+        if !csv_bytes.is_empty() {
+            zip.start_file("카드사용내역.csv", deflate)
+                .map_err(|e| format!("ZIP: CSV start_file error: {e}"))?;
+            zip.write_all(csv_bytes)
+                .map_err(|e| format!("ZIP: CSV write error: {e}"))?;
+        }
+
+        // PDF
+        if !pdf_bytes.is_empty() {
+            zip.start_file("영수증모음.pdf", deflate)
+                .map_err(|e| format!("ZIP: PDF start_file error: {e}"))?;
+            zip.write_all(pdf_bytes)
+                .map_err(|e| format!("ZIP: PDF write error: {e}"))?;
         }
 
         zip.finish()

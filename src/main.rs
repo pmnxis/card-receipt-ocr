@@ -11,6 +11,7 @@ mod expense;
 mod fonts;
 mod model;
 mod parser;
+mod pdf_export;
 mod table;
 
 #[cfg(target_arch = "wasm32")]

@@ -300,26 +300,40 @@ impl eframe::App for CardReceiptApp {
                     }
                 }
 
-                // ZIP photo export button (numbered by current sort order)
+                // ZIP bundle export: numbered images + CSV + PDF
                 if ui
                     .add_enabled(
                         !self.state.transactions.is_empty(),
-                        egui::Button::new("사진 ZIP 저장"),
+                        egui::Button::new("ZIP 내보내기"),
                     )
                     .clicked()
                 {
                     #[cfg(target_arch = "wasm32")]
                     {
+                        let csv = self.state.to_csv();
                         let images: Vec<(&str, &[u8])> = self
                             .state
                             .transactions
                             .iter()
                             .map(|t| (t.filename.as_str(), t.image_bytes.as_slice()))
                             .collect();
-                        if let Err(e) =
-                            web_download::download_images_as_zip(&images, "영수증사진.zip")
-                        {
-                            self.state.status_message = format!("ZIP 다운로드 실패: {}", e);
+                        match crate::pdf_export::generate_receipts_pdf(
+                            &self.state.transactions,
+                        ) {
+                            Ok(pdf_bytes) => {
+                                if let Err(e) = web_download::download_receipt_bundle(
+                                    &images,
+                                    csv.as_bytes(),
+                                    &pdf_bytes,
+                                    "영수증모음.zip",
+                                ) {
+                                    self.state.status_message =
+                                        format!("ZIP 다운로드 실패: {}", e);
+                                }
+                            }
+                            Err(e) => {
+                                self.state.status_message = format!("PDF 생성 실패: {}", e);
+                            }
                         }
                     }
                 }
