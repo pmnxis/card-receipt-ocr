@@ -42,6 +42,7 @@ web-sys = { version = "=0.3.85", features = [
     "console",
 ] }
 console_error_panic_hook = "0.1"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 env_logger = "0.11"

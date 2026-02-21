@@ -62,3 +62,42 @@ pub fn download_file(filename: &str, data: &[u8], mime_type: &str) -> Result<(),
 pub fn download_csv(filename: &str, csv_content: &str) -> Result<(), String> {
     download_file(filename, csv_content.as_bytes(), "text/csv;charset=utf-8;")
 }
+
+/// Download images as a numbered ZIP archive.
+/// Each image is renamed to its 1-based index with the original extension.
+pub fn download_images_as_zip(
+    images: &[(&str, &[u8])], // (original_filename, bytes)
+    zip_filename: &str,
+) -> Result<(), String> {
+    use std::io::Write;
+    use zip::{write::SimpleFileOptions, CompressionMethod, ZipWriter};
+
+    let mut buf: Vec<u8> = Vec::new();
+    {
+        let cursor = std::io::Cursor::new(&mut buf);
+        let mut zip = ZipWriter::new(cursor);
+        let options =
+            SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+
+        for (i, (original_name, bytes)) in images.iter().enumerate() {
+            if bytes.is_empty() {
+                continue;
+            }
+            let ext = std::path::Path::new(original_name)
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("jpg")
+                .to_ascii_lowercase();
+            let entry_name = format!("{}.{}", i + 1, ext);
+            zip.start_file(&entry_name, options)
+                .map_err(|e| format!("ZIP: start_file error: {e}"))?;
+            zip.write_all(bytes)
+                .map_err(|e| format!("ZIP: write error: {e}"))?;
+        }
+
+        zip.finish()
+            .map_err(|e| format!("ZIP: finish error: {e}"))?;
+    }
+
+    download_file(zip_filename, &buf, "application/zip")
+}

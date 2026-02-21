@@ -130,18 +130,17 @@ impl CardReceiptApp {
         }
         drop(files);
 
-        // Sort after new additions
-        if !self.state.transactions.is_empty() {
-            self.state.sort_transactions();
-        }
-
         // Update progress status
         let remaining = *self.ocr_remaining.lock().unwrap();
         if remaining > 0 {
             self.state.status_message = format!("OCR 처리 중... ({}개 남음)", remaining);
             self.state.ocr_in_progress = true;
         } else if self.state.ocr_in_progress {
+            // OCR just completed: force datetime ascending sort
             self.state.ocr_in_progress = false;
+            self.state.sort_column = crate::model::SortColumn::DateTime;
+            self.state.sort_direction = crate::model::SortDirection::Ascending;
+            self.state.sort_transactions();
             if self.state.error_messages.is_empty() {
                 self.state.status_message =
                     format!("완료! {}개 거래 인식됨", self.state.transactions.len());
@@ -297,6 +296,30 @@ impl eframe::App for CardReceiptApp {
                         let csv = self.state.to_csv();
                         if let Err(e) = web_download::download_csv("카드사용내역.csv", &csv) {
                             self.state.status_message = format!("CSV 다운로드 실패: {}", e);
+                        }
+                    }
+                }
+
+                // ZIP photo export button (numbered by current sort order)
+                if ui
+                    .add_enabled(
+                        !self.state.transactions.is_empty(),
+                        egui::Button::new("사진 ZIP 저장"),
+                    )
+                    .clicked()
+                {
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        let images: Vec<(&str, &[u8])> = self
+                            .state
+                            .transactions
+                            .iter()
+                            .map(|t| (t.filename.as_str(), t.image_bytes.as_slice()))
+                            .collect();
+                        if let Err(e) =
+                            web_download::download_images_as_zip(&images, "영수증사진.zip")
+                        {
+                            self.state.status_message = format!("ZIP 다운로드 실패: {}", e);
                         }
                     }
                 }
