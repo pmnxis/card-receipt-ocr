@@ -202,10 +202,10 @@ fn extract_first_amount(text: &str) -> Result<u64, String> {
 fn extract_first_nonzero_amount(text: &str) -> Result<u64, String> {
     let re = Regex::new(r"([\d,]+)\s*원").unwrap();
     for caps in re.captures_iter(text) {
-        if let Ok(amount) = parse_krw_amount(&caps[1]) {
-            if amount > 0 {
-                return Ok(amount);
-            }
+        if let Ok(amount) = parse_krw_amount(&caps[1])
+            && amount > 0
+        {
+            return Ok(amount);
         }
     }
     Err("0이 아닌 금액을 찾을 수 없습니다".into())

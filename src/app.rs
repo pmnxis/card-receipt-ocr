@@ -32,6 +32,7 @@ pub struct CardReceiptApp {
     /// Async OCR tasks push completed results here
     completed_queue: Arc<Mutex<Vec<OcrResult>>>,
     /// File picker pushes new files here
+    #[allow(clippy::type_complexity)]
     file_queue: Arc<Mutex<Vec<(String, Vec<u8>)>>>,
     /// Number of OCR tasks currently in flight
     ocr_remaining: Arc<Mutex<usize>>,
@@ -157,10 +158,10 @@ impl CardReceiptApp {
     /// Update preview texture and edit fields when selection changes
     fn update_preview(&mut self, ctx: &egui::Context) {
         // Validate selected_index
-        if let Some(idx) = self.state.selected_index {
-            if idx >= self.state.transactions.len() {
-                self.state.selected_index = None;
-            }
+        if let Some(idx) = self.state.selected_index
+            && idx >= self.state.transactions.len()
+        {
+            self.state.selected_index = None;
         }
 
         if self.state.selected_index != self.preview_loaded_for {

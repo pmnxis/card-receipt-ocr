@@ -78,10 +78,10 @@ fn main() {
             .await;
 
         // Remove loading text
-        if let Some(loading_text) = document.get_element_by_id("loading_text") {
-            if let Some(parent) = loading_text.parent_node() {
-                parent.remove_child(&loading_text).ok();
-            }
+        if let Some(loading_text) = document.get_element_by_id("loading_text")
+            && let Some(parent) = loading_text.parent_node()
+        {
+            parent.remove_child(&loading_text).ok();
         }
 
         if let Err(e) = start_result {
