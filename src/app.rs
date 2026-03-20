@@ -89,7 +89,14 @@ impl CardReceiptApp {
                             txn.image_bytes = bytes;
                             Ok(txn)
                         }
-                        Err(e) => Err((filename.clone(), format!("파싱 실패: {}", e))),
+                        Err(e) => {
+                            // Include first 300 chars of OCR text for debugging
+                            let preview: String = text.chars().take(300).collect();
+                            Err((
+                                filename.clone(),
+                                format!("파싱 실패: {} | OCR: {}", e, preview),
+                            ))
+                        }
                     },
                     Err(e) => Err((filename.clone(), format!("OCR 실패: {}", e))),
                 };

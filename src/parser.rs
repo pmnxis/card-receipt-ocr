@@ -40,7 +40,11 @@ pub fn parse_receipt(filename: &str, raw_text: &str) -> Result<CardTransaction, 
 fn detect_format(text: &str) -> CardFormat {
     if text.contains("하나카드") || text.contains("거래일시") {
         CardFormat::HanaCard
-    } else if text.contains("결제 정보") || text.contains("현대카드") || text.contains("거래 일자")
+    } else if text.contains("결제 정보")
+        || text.contains("결제정보")
+        || text.contains("현대카드")
+        || text.contains("거래 일자")
+        || text.contains("거래일자")
     {
         CardFormat::NaverHyundaiCard
     } else if text.contains("카드이용내역")
@@ -91,18 +95,29 @@ fn parse_hana_card(text: &str) -> Result<(NaiveDateTime, String, u64), String> {
 /// 43,489원
 /// 거래 일자 26. 1. 31 · 14:59:27
 fn parse_naver_hyundai(text: &str) -> Result<(NaiveDateTime, String, u64), String> {
-    let date_re = Regex::new(
-        r"거래\s*일자\s+(\d{2})[.\s]+(\d{1,2})[.\s]+(\d{1,2})\s*[·\-:]\s*(\d{2}):(\d{2}):?(\d{2})?",
-    )
-    .unwrap();
+    // Flexible date patterns for Naver Hyundai Card:
+    // OCR produces: "거래 일자      26. 3. 9 · 22:39:54"
+    // The middle dot (·) may be any of U+00B7, U+318D, U+2022, etc.
+    // Use \D+ (non-digit sequence) to skip any separator between date and time.
+    let date_patterns = [
+        // "거래 일자" followed by date and time, any non-digit separator
+        r"거래\s*일\s*자\s+(\d{2})\.\s*(\d{1,2})\.\s*(\d{1,2})\D+(\d{2}):(\d{2}):?(\d{2})?",
+        // Without "자" - OCR might drop it
+        r"거래\s*일\s+(\d{2})\.\s*(\d{1,2})\.\s*(\d{1,2})\D+(\d{2}):(\d{2}):?(\d{2})?",
+        // Fallback: any YY.M.DD followed by HH:MM:SS anywhere in text
+        r"(\d{2})\.\s*(\d{1,2})\.\s*(\d{1,2})\D+(\d{2}):(\d{2}):(\d{2})",
+    ];
 
-    // Also try "거래 일자" with the dot-separated format
-    let date_re2 = Regex::new(
-        r"거래\s*일\s*자\s+(\d{2})\.\s*(\d{1,2})\.\s*(\d{1,2})\s*[·\-]\s*(\d{2}):(\d{2}):?(\d{2})?",
-    )
-    .unwrap();
+    let mut caps_opt = None;
+    for pat in &date_patterns {
+        let re = Regex::new(pat).unwrap();
+        if let Some(caps) = re.captures(text) {
+            caps_opt = Some(caps);
+            break;
+        }
+    }
 
-    let datetime = if let Some(caps) = date_re.captures(text).or_else(|| date_re2.captures(text)) {
+    let datetime = if let Some(caps) = caps_opt {
         let year = 2000 + caps[1].parse::<i32>().unwrap_or(26);
         let s = format!(
             "{}-{:02}-{:02} {}:{}:{}",
@@ -158,9 +173,11 @@ fn parse_card_app_screenshot(text: &str) -> Result<(NaiveDateTime, String, u64),
         return Err("거래일을 찾을 수 없습니다".into());
     };
 
-    // For card app screenshots, try labeled amounts first (공급가액),
-    // then first non-zero amount (avoid 부가세 0원 / 봉사료 0원)
-    let amount = extract_amount_after_label(text, "공급가액")
+    // For card app screenshots, prefer the total amount shown at the top of the
+    // detail modal (right after merchant name), NOT 공급가액 which excludes 부가세.
+    // The total amount is the first non-zero amount after "상세 이용내역" header.
+    let amount = extract_first_amount_after_header(text, "상세 이용내역")
+        .or_else(|_| extract_amount_after_label(text, "공급가액"))
         .or_else(|_| extract_first_nonzero_amount(text))
         .or_else(|_| extract_first_amount(text))?;
 
@@ -179,6 +196,33 @@ fn parse_fallback(text: &str) -> Result<(NaiveDateTime, String, u64), String> {
 }
 
 // --- Helper functions ---
+
+/// Extract the first non-zero amount that appears after a given header line.
+/// Used for card app screenshots to get the total amount from the modal,
+/// not the 공급가액 breakdown.
+fn extract_first_amount_after_header(text: &str, header: &str) -> Result<u64, String> {
+    let amount_re = Regex::new(r"([\d,]+)\s*원").unwrap();
+    let mut found_header = false;
+    for line in text.lines() {
+        let trimmed = line.trim();
+        if trimmed.contains(header) {
+            found_header = true;
+            continue;
+        }
+        if !found_header {
+            continue;
+        }
+        // Look for the first amount line after the header (this is the total)
+        if let Some(caps) = amount_re.captures(trimmed) {
+            if let Ok(amount) = parse_krw_amount(&caps[1]) {
+                if amount > 0 {
+                    return Ok(amount);
+                }
+            }
+        }
+    }
+    Err(format!("'{}' 이후 금액을 찾을 수 없습니다", header))
+}
 
 fn extract_amount_after_label(text: &str, label: &str) -> Result<u64, String> {
     let pattern = format!(r"{}\s+([\d,]+)\s*원", regex::escape(label));

@@ -49,6 +49,13 @@ const RULES: &[Rule] = &[
             "투다리",
             "치킨",
             "피자",
+            "Family Mart",
+            "FamilyMart",
+            "7 Eleven",
+            "Seven Eleven",
+            "세븐일레븐",
+            "패밀리마트",
+            "편의점",
         ],
         category: "业务招待(Entertainment expenses)",
         label: "Business meal",
@@ -78,10 +85,24 @@ const RULES: &[Rule] = &[
         label: "Gas",
         two_line: false,
     },
+    Rule {
+        keywords: &["공항공사", "교통운영팀", "주차장", "주차"],
+        category: "停车费(Parking fee)",
+        label: "Parking",
+        two_line: false,
+    },
 ];
 
 /// Known labels that sc-expense recognizes directly (no keyword matching needed)
-const KNOWN_LABELS: &[&str] = &["Gas", "Tallgate", "Highpass", "Taxi", "Express", "Telecom"];
+const KNOWN_LABELS: &[&str] = &[
+    "Gas",
+    "Tallgate",
+    "Highpass",
+    "Taxi",
+    "Express",
+    "Telecom",
+    "Parking",
+];
 
 /// Detect expense type from merchant name using sc-expense keyword rules.
 /// Returns None if no rule matches.
@@ -126,6 +147,7 @@ pub fn all_expense_labels() -> &'static [&'static str] {
         "Office expense",
         "Telecom",
         "Business meal",
+        "Parking",
         "Taxi",
         "Express",
         "Tallgate(ETC)",
