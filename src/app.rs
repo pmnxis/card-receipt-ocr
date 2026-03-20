@@ -459,6 +459,7 @@ impl eframe::App for CardReceiptApp {
                             );
                             if ui.button("적용").clicked() {
                                 self.edit_expense_type = rec.label.clone();
+                                save_edits = true;
                             }
                         });
                     }
@@ -470,6 +471,7 @@ impl eframe::App for CardReceiptApp {
                         for label in expense::all_expense_labels() {
                             if ui.small_button(*label).clicked() {
                                 self.edit_expense_type = label.to_string();
+                                save_edits = true;
                             }
                         }
                     });

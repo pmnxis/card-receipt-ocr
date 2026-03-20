@@ -213,12 +213,11 @@ fn extract_first_amount_after_header(text: &str, header: &str) -> Result<u64, St
             continue;
         }
         // Look for the first amount line after the header (this is the total)
-        if let Some(caps) = amount_re.captures(trimmed) {
-            if let Ok(amount) = parse_krw_amount(&caps[1]) {
-                if amount > 0 {
-                    return Ok(amount);
-                }
-            }
+        if let Some(caps) = amount_re.captures(trimmed)
+            && let Ok(amount) = parse_krw_amount(&caps[1])
+            && amount > 0
+        {
+            return Ok(amount);
         }
     }
     Err(format!("'{}' 이후 금액을 찾을 수 없습니다", header))

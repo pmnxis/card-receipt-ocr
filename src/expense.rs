@@ -76,7 +76,7 @@ const RULES: &[Rule] = &[
     Rule {
         keywords: &["하이패스", "도로공사", "순환도로", "하이웨이", "톨게이트"],
         category: "车辆费(Vehicle expense)",
-        label: "Tallgate(ETC)",
+        label: "Tollgate(ETC)",
         two_line: false,
     },
     Rule {
@@ -95,13 +95,7 @@ const RULES: &[Rule] = &[
 
 /// Known labels that sc-expense recognizes directly (no keyword matching needed)
 const KNOWN_LABELS: &[&str] = &[
-    "Gas",
-    "Tallgate",
-    "Highpass",
-    "Taxi",
-    "Express",
-    "Telecom",
-    "Parking",
+    "Gas", "Tollgate", "Highpass", "Taxi", "Express", "Telecom", "Parking",
 ];
 
 /// Detect expense type from merchant name using sc-expense keyword rules.
@@ -150,7 +144,7 @@ pub fn all_expense_labels() -> &'static [&'static str] {
         "Parking",
         "Taxi",
         "Express",
-        "Tallgate(ETC)",
+        "Tollgate(ETC)",
         "Gas",
     ]
 }
