@@ -119,11 +119,13 @@ fn parse_naver_hyundai(text: &str) -> Result<(NaiveDateTime, String, u64), Strin
 
     let datetime = if let Some(caps) = caps_opt {
         let year = 2000 + caps[1].parse::<i32>().unwrap_or(26);
+        let month = fix_ocr_range(caps[2].parse::<u32>().unwrap_or(1), 1, 12);
+        let day = fix_ocr_range(caps[3].parse::<u32>().unwrap_or(1), 1, 31);
         let s = format!(
             "{}-{:02}-{:02} {}:{}:{}",
             year,
-            caps[2].parse::<u32>().unwrap_or(1),
-            caps[3].parse::<u32>().unwrap_or(1),
+            month,
+            day,
             &caps[4],
             &caps[5],
             caps.get(6).map_or("00", |m| m.as_str())
@@ -196,6 +198,26 @@ fn parse_fallback(text: &str) -> Result<(NaiveDateTime, String, u64), String> {
 }
 
 // --- Helper functions ---
+
+/// Fix OCR-garbled numbers by extracting the last valid digit(s).
+/// e.g., month "71" → 1 (OCR prepended noise to "1"), "30" stays 30.
+fn fix_ocr_range(value: u32, min: u32, max: u32) -> u32 {
+    if value >= min && value <= max {
+        return value;
+    }
+    // Try last digit (e.g., 71 → 1)
+    let last = value % 10;
+    if last >= min && last <= max {
+        return last;
+    }
+    // Try last two digits (e.g., 130 → 30)
+    let last2 = value % 100;
+    if last2 >= min && last2 <= max {
+        return last2;
+    }
+    // Give up, clamp to range
+    value.clamp(min, max)
+}
 
 /// Extract the first non-zero amount that appears after a given header line.
 /// Used for card app screenshots to get the total amount from the modal,

@@ -124,13 +124,20 @@ impl AppState {
         // UTF-8 BOM for Excel compatibility
         let mut csv = String::from("\u{FEFF}");
         csv.push_str("파일명,날짜,가맹점,금액\n");
-        for t in &self.transactions {
+        for (i, t) in self.transactions.iter().enumerate() {
+            // Use numbered filename matching ZIP bundle (1.png, 2.jpg, …)
+            let ext = std::path::Path::new(&t.filename)
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("jpg")
+                .to_ascii_lowercase();
+            let numbered_name = format!("{}.{}", i + 1, ext);
             // Use expense_type instead of merchant when set
             // (sc-expense Chrome extension reads this column)
             let merchant_col = t.expense_type.as_deref().unwrap_or(&t.merchant);
             csv.push_str(&format!(
                 "{},{},{},{}\n",
-                t.filename,
+                numbered_name,
                 t.datetime.format("%m.%d %H:%M"),
                 merchant_col,
                 t.amount,
