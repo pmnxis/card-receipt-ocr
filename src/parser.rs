@@ -136,10 +136,10 @@ fn parse_naver_hyundai(text: &str) -> Result<(NaiveDateTime, String, u64), Strin
         return Err("거래 일자를 찾을 수 없습니다".into());
     };
 
-    // Try labeled "금액" first, then first non-zero amount, then first amount
-    let amount = extract_amount_after_label(text, "금액")
-        .or_else(|_| extract_first_nonzero_amount(text))
-        .or_else(|_| extract_first_amount(text))?;
+    // The large amount at the top is the charged total. The labeled "금액"
+    // below it is the pre-VAT supply amount (for example 29,091 of a 32,000
+    // charge), so selecting the labeled value under-reports Hyundai receipts.
+    let amount = extract_first_nonzero_amount(text).or_else(|_| extract_first_amount(text))?;
     let merchant = extract_merchant_before_amount(text);
 
     Ok((datetime, merchant, amount))
@@ -151,6 +151,9 @@ fn parse_naver_hyundai(text: &str) -> Result<(NaiveDateTime, String, u64), Strin
 /// 16,500원
 /// 거래일 2026.01.23 11:59
 fn parse_card_app_screenshot(text: &str) -> Result<(NaiveDateTime, String, u64), String> {
+    let detail_text = text
+        .split_once("상세 이용내역")
+        .map_or(text, |(_, detail)| detail);
     // Try "거래일" (without 시)
     let date_re =
         Regex::new(r"거래일\s+(\d{4})[.\s](\d{2})[.\s](\d{2})\s+(\d{2}):(\d{2})").unwrap();
@@ -158,8 +161,17 @@ fn parse_card_app_screenshot(text: &str) -> Result<(NaiveDateTime, String, u64),
     let date_re2 =
         Regex::new(r"거래일\s+(\d{4})[.\s](\d{2})[.\s](\d{2})\s*(\d{2}):(\d{2}):?(\d{2})?")
             .unwrap();
+    // Two-column OCR can emit the "거래일" label and its value on separate
+    // lines. Search only inside the detail modal so a background transaction
+    // date is never selected.
+    let detail_date_re =
+        Regex::new(r"(\d{4})[.\s](\d{2})[.\s](\d{2})\s+(\d{2}):(\d{2}):?(\d{2})?").unwrap();
 
-    let datetime = if let Some(caps) = date_re.captures(text).or_else(|| date_re2.captures(text)) {
+    let datetime = if let Some(caps) = date_re
+        .captures(detail_text)
+        .or_else(|| date_re2.captures(detail_text))
+        .or_else(|| detail_date_re.captures(detail_text))
+    {
         let s = format!(
             "{}-{}-{} {}:{}:{}",
             &caps[1],
@@ -184,8 +196,15 @@ fn parse_card_app_screenshot(text: &str) -> Result<(NaiveDateTime, String, u64),
         .or_else(|_| extract_first_amount(text))?;
 
     let merchant = extract_merchant_from_card_detail(text)
-        .or_else(|| extract_text_after_label(text, "상세 이용내역"))
-        .unwrap_or_else(|| extract_merchant_before_amount(text));
+        .or_else(|| {
+            let merchant = extract_merchant_before_amount(text);
+            (!merchant.is_empty()).then_some(merchant)
+        })
+        .or_else(|| {
+            extract_text_after_label(text, "상세 이용내역")
+                .filter(|value| !Regex::new(r"[\d,]+\s*원").unwrap().is_match(value))
+        })
+        .unwrap_or_default();
 
     Ok((datetime, merchant, amount))
 }
@@ -330,6 +349,8 @@ fn extract_merchant_from_card_detail(text: &str) -> Option<String> {
         "구글페이",
     ];
     let amount_re = Regex::new(r"[\d,]+\s*원").unwrap();
+    let datetime_re =
+        Regex::new(r"^\d{2,4}[.\-/]\d{1,2}[.\-/]\d{1,2}\s+\d{1,2}:\d{2}(:\d{2})?$").unwrap();
 
     let mut found_header = false;
     for line in text.lines() {
@@ -359,6 +380,12 @@ fn extract_merchant_from_card_detail(text: &str) -> Option<String> {
 
         // Skip amount lines
         if amount_re.is_match(trimmed) {
+            continue;
+        }
+
+        // A value-only datetime appears on a separate OCR line when the
+        // two-column detail panel is read column by column.
+        if datetime_re.is_match(trimmed) {
             continue;
         }
 
@@ -431,4 +458,61 @@ fn extract_merchant_before_amount(text: &str) -> String {
         }
     }
     candidate
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn naver_hyundai_uses_total_instead_of_supply_amount() {
+        let text = r#"
+맛고을
+32,000원
+금액 상세
+금액 29,091원
+부가세 2,909원
+봉사료 0원
+결제 정보
+거래 일자 26. 4. 17 · 18:19:45
+결제 카드 네이버 현대카드
+"#;
+
+        let transaction = parse_receipt("hyundai.jpg", text).unwrap();
+
+        assert_eq!(transaction.amount, 32_000);
+        assert_eq!(transaction.merchant, "맛고을");
+        assert_eq!(
+            transaction.datetime,
+            NaiveDateTime::parse_from_str("2026-04-17 18:19:45", "%Y-%m-%d %H:%M:%S").unwrap()
+        );
+    }
+
+    #[test]
+    fn card_app_uses_modal_total_instead_of_background_transaction() {
+        let text = r#"
+카드이용내역(매출전표)
+스타한국물류
+44,000원
+상세 이용내역
+35,000원
+거래일
+거래구분
+승인번호
+거래상태
+이용카드
+2026.07.03 00:01
+일시불
+01066392
+결제확정
+본인 090*
+가맹점 정보
+카카오T
+"#;
+
+        let transaction = parse_receipt("card-app.png", text).unwrap();
+
+        assert_eq!(transaction.amount, 35_000);
+        assert_eq!(transaction.merchant, "카카오T");
+    }
 }

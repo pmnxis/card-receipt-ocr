@@ -87,6 +87,9 @@ impl CardReceiptApp {
                     Ok(text) => match parser::parse_receipt(&filename, &text) {
                         Ok(mut txn) => {
                             txn.image_bytes = bytes;
+                            txn.expense_type =
+                                expense::detect_expense_at(&txn.merchant, &txn.datetime)
+                                    .map(|recommendation| recommendation.label);
                             Ok(txn)
                         }
                         Err(e) => {
@@ -450,7 +453,13 @@ impl eframe::App for CardReceiptApp {
                     ui.add_space(4.0);
 
                     // Expense recommendation from keyword matching
-                    let recommendation = expense::detect_expense(&self.edit_merchant);
+                    let recommendation =
+                        NaiveDateTime::parse_from_str(&self.edit_datetime_str, "%Y.%m.%d %H:%M")
+                            .ok()
+                            .and_then(|datetime| {
+                                expense::detect_expense_at(&self.edit_merchant, &datetime)
+                            })
+                            .or_else(|| expense::detect_expense(&self.edit_merchant));
                     if let Some(rec) = &recommendation {
                         ui.horizontal(|ui| {
                             ui.colored_label(

@@ -7,6 +7,8 @@
 //! Expense type detection based on merchant keyword matching.
 //! Rules ported from sc-expense Chrome extension (popup.js).
 
+use chrono::{NaiveDateTime, Timelike};
+
 /// Expense recommendation from keyword matching
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
@@ -42,6 +44,7 @@ const RULES: &[Rule] = &[
     Rule {
         keywords: &[
             "흥덕",
+            "맛고을",
             "식당",
             "레스토랑",
             "카페",
@@ -95,7 +98,15 @@ const RULES: &[Rule] = &[
 
 /// Known labels that sc-expense recognizes directly (no keyword matching needed)
 const KNOWN_LABELS: &[&str] = &[
-    "Gas", "Tollgate", "Highpass", "Taxi", "Express", "Telecom", "Parking",
+    "Gas",
+    "Tollgate",
+    "Highpass",
+    "Taxi",
+    "Express",
+    "Telecom",
+    "Parking",
+    "OT Meal",
+    "Business meal",
 ];
 
 /// Detect expense type from merchant name using sc-expense keyword rules.
@@ -123,6 +134,20 @@ pub fn detect_expense(merchant: &str) -> Option<ExpenseRecommendation> {
     None
 }
 
+/// Detect an expense using both the merchant and transaction time.
+/// Restaurant transactions from 18:00 are normally submitted as OT Meal.
+pub fn detect_expense_at(
+    merchant: &str,
+    datetime: &NaiveDateTime,
+) -> Option<ExpenseRecommendation> {
+    let mut recommendation = detect_expense(merchant)?;
+    if recommendation.label == "Business meal" && datetime.hour() >= 18 {
+        recommendation.label = "OT Meal".to_string();
+        recommendation.category = "其他补贴(Other subsidies)".to_string();
+    }
+    Some(recommendation)
+}
+
 /// Generate the fee note string for CSV output.
 /// This is what the sc-expense Chrome extension expects in the merchant column.
 #[allow(dead_code)]
@@ -141,10 +166,40 @@ pub fn all_expense_labels() -> &'static [&'static str] {
         "Office expense",
         "Telecom",
         "Business meal",
+        "OT Meal",
         "Parking",
         "Taxi",
         "Express",
         "Tollgate(ETC)",
         "Gas",
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDate;
+
+    fn at(hour: u32) -> NaiveDateTime {
+        NaiveDate::from_ymd_opt(2026, 6, 8)
+            .unwrap()
+            .and_hms_opt(hour, 20, 0)
+            .unwrap()
+    }
+
+    #[test]
+    fn restaurant_after_18_is_ot_meal() {
+        assert_eq!(
+            detect_expense_at("맛고을 식당", &at(18)).unwrap().label,
+            "OT Meal"
+        );
+    }
+
+    #[test]
+    fn restaurant_before_18_remains_business_meal() {
+        assert_eq!(
+            detect_expense_at("맛고을 식당", &at(17)).unwrap().label,
+            "Business meal"
+        );
+    }
 }
