@@ -242,7 +242,10 @@ fn fix_ocr_range(value: u32, min: u32, max: u32) -> u32 {
 /// Used for card app screenshots to get the total amount from the modal,
 /// not the 공급가액 breakdown.
 fn extract_first_amount_after_header(text: &str, header: &str) -> Result<u64, String> {
-    let amount_re = Regex::new(r"([\d,]+)\s*원").unwrap();
+    // Tesseract commonly reads the won suffix as "v", "V", "W", or drops it.
+    // Restrict the relaxed match to a whole line after the detail header and
+    // require thousands separators so dates and approval numbers do not match.
+    let amount_re = Regex::new(r"^\s*(\d{1,3}(?:,\d{3})+)\s*(?:원|[vVwW₩])?\s*$").unwrap();
     let mut found_header = false;
     for line in text.lines() {
         let trimmed = line.trim();
@@ -348,7 +351,7 @@ fn extract_merchant_from_card_detail(text: &str) -> Option<String> {
         "매출전표",
         "구글페이",
     ];
-    let amount_re = Regex::new(r"[\d,]+\s*원").unwrap();
+    let amount_re = Regex::new(r"^\s*\d{1,3}(?:,\d{3})+\s*(?:원|[vVwW₩])?\s*$").unwrap();
     let datetime_re =
         Regex::new(r"^\d{2,4}[.\-/]\d{1,2}[.\-/]\d{1,2}\s+\d{1,2}:\d{2}(:\d{2})?$").unwrap();
 
@@ -495,7 +498,8 @@ mod tests {
 스타한국물류
 44,000원
 상세 이용내역
-35,000원
+o
+35,000 v
 거래일
 거래구분
 승인번호
